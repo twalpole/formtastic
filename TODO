@@ -1,0 +1,16 @@
+submit => native?
+reset needs native/submit?
+link => text?
+
+
+f.button :commit, :as => :plain
+f.button :commit, :as => :pretty
+f.button :cancel, :as => :text
+
+f.button :commit, :as => :submit   # <input type="submit"> unstyled
+f.button :commit, :as => :plain    # <button> unstyled
+f.button :commit, :as => :pretty   # <button> styled with an image icon
+f.button :reset,  :as => :pretty   # <button> styled with an image icon
+f.button :reset,  :as => :plain    # <button> unstyled
+f.button :cancel, :as => :pretty   # <a> styled with an image icon
+f.button :cancel, :as => :text     # <a> unstyled

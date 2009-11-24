@@ -8,8 +8,20 @@ describe 'SemanticFormBuilder#commit_button' do
   before do
     @output_buffer = ''
     mock_everything
+    ::ActiveSupport::Deprecation.silenced = true
   end
-
+  
+  after do
+    ::ActiveSupport::Deprecation.silenced = false
+  end
+  
+  it "should warn of the deprecation" do
+    ::ActiveSupport::Deprecation.should_receive(:warn).once
+    semantic_form_for(@new_post) do |builder|
+      concat(builder.commit_button)
+    end
+  end
+  
   describe 'when used on any record' do
 
     before do
@@ -44,7 +56,7 @@ describe 'SemanticFormBuilder#commit_button' do
   end
 
   describe "its accesskey" do
-  
+    
     it 'should allow nil default' do
       with_config :default_commit_button_accesskey, nil do
         output_buffer.should_not have_tag('li.commit input[@accesskey]')
@@ -205,7 +217,7 @@ describe 'SemanticFormBuilder#commit_button' do
           semantic_form_for(@new_post) do |builder|
             concat(builder.commit_button("Click!"))
           end
-          output_buffer.should have_tag('li.commit input[@value="Click!"][@class~="create"]')
+          output_buffer.should have_tag('li.commit input[@value="Click!"]')
         end
       end
 
@@ -223,7 +235,7 @@ describe 'SemanticFormBuilder#commit_button' do
             semantic_form_for(@new_post) do |builder|
               concat(builder.commit_button)
             end
-            output_buffer.should have_tag('li.commit input[@value="Create Post"][@class~="create"]')
+            output_buffer.should have_tag('li.commit input[@value="Create Post"]')
           end
         end
 
@@ -245,7 +257,7 @@ describe 'SemanticFormBuilder#commit_button' do
             semantic_form_for(@new_post) do |builder|
               concat(builder.commit_button)
             end
-            output_buffer.should have_tag(%Q{li.commit input[@value="Custom Create Post"][@class~="create"]})
+            output_buffer.should have_tag(%Q{li.commit input[@value="Custom Create Post"]})
           end
 
           it 'should render an input with anoptional localized label (I18n) - if first is not set' do
@@ -260,7 +272,7 @@ describe 'SemanticFormBuilder#commit_button' do
             semantic_form_for(@new_post) do |builder|
               concat(builder.commit_button)
             end
-            output_buffer.should have_tag(%Q{li.commit input[@value="Custom Create"][@class~="create"]})
+            output_buffer.should have_tag(%Q{li.commit input[@value="Custom Create"]})
           end
 
         end
@@ -278,7 +290,7 @@ describe 'SemanticFormBuilder#commit_button' do
           semantic_form_for(@new_post) do |builder|
             concat(builder.commit_button("Click!"))
           end
-          output_buffer.should have_tag('li.commit input[@value="Click!"][@class~="update"]')
+          output_buffer.should have_tag('li.commit input[@value="Click!"]')
         end
       end
 
@@ -296,7 +308,7 @@ describe 'SemanticFormBuilder#commit_button' do
             semantic_form_for(@new_post) do |builder|
               concat(builder.commit_button)
             end
-            output_buffer.should have_tag('li.commit input[@value="Save Post"][@class~="update"]')
+            output_buffer.should have_tag('li.commit input[@value="Save Post"]')
           end
         end
 
@@ -318,7 +330,7 @@ describe 'SemanticFormBuilder#commit_button' do
             semantic_form_for(@new_post) do |builder|
               concat(builder.commit_button)
             end
-            output_buffer.should have_tag(%Q{li.commit input[@value="Custom Save Post"][@class~="update"]})
+            output_buffer.should have_tag(%Q{li.commit input[@value="Custom Save Post"]})
           end
 
           it 'should render an input with anoptional localized label (I18n) - if first is not set' do
@@ -333,7 +345,7 @@ describe 'SemanticFormBuilder#commit_button' do
             semantic_form_for(@new_post) do |builder|
               concat(builder.commit_button)
             end
-            output_buffer.should have_tag(%Q{li.commit input[@value="Custom Save"][@class~="update"]})
+            output_buffer.should have_tag(%Q{li.commit input[@value="Custom Save"]})
           end
 
         end

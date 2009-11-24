@@ -6,3 +6,5 @@ en:
     save: 'Save'
     submit: 'Submit'
     required: 'Required'
+    cancel: 'Cancel'
+    reset: 'Reset'

@@ -41,6 +41,7 @@ module FormtasticSpecHelper
   include ActionView::Helpers::RecordIdentificationHelper
   include ActionView::Helpers::DateHelper
   include ActionView::Helpers::CaptureHelper
+  include ActionView::Helpers::AssetTagHelper
   include ActiveSupport
   include ActionController::PolymorphicRoutes
   

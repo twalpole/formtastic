@@ -1,0 +1,35 @@
+/* -------------------------------------------------------------------------------------------------
+
+This stylesheet forms part of the Formtastic Rails plugin
+http://github.com/justinfrench/formtastic
+
+(c) Copyright 2008 Justin French
+
+--------------------------------------------------------------------------------------------------*/
+
+/* fiddle with standard submit buttons */
+form.formtastic li.submit input {
+  padding:2px 5px;
+  margin-top:-2px;
+}
+
+/* gradients on pretty-buttons */
+form.formtastic li.pretty button, form.formtastic li.pretty a {
+  filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#FFffffff, endColorstr=#FFe5e5e5);
+}
+
+form.formtastic li.pretty button:hover, form.formtastic li.pretty a:hover {
+  filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#FFffffff, endColorstr=#FFdff4ff);
+}
+
+form.formtastic li.pretty.commit button:hover, form.formtastic li.pretty.commit a:hover {
+  filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#FFffffff, endColorstr=#FFe6efc2);
+}
+
+form.formtastic li.pretty.cancel button:hover, form.formtastic li.pretty.cancel a:hover {
+  filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#FFffffff, endColorstr=#FFfbe3e4);
+}
+
+
+
+

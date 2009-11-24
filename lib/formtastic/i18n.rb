@@ -7,7 +7,9 @@ module Formtastic
         :yes            => 'Yes',
         :no             => 'No',
         :create         => 'Create {{model}}',
-        :update         => 'Update {{model}}'
+        :update         => 'Update {{model}}',
+        :cancel         => 'Cancel',
+        :reset          => 'Reset'
       }.freeze
     SCOPES = [
         '{{model}}.{{action}}.{{attribute}}',

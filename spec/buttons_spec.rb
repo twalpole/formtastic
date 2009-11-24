@@ -108,14 +108,21 @@ describe 'SemanticFormBuilder#buttons' do
     describe 'with button names as args' do
 
       before do
+        # mock the controller/env because :cancel needs link_to(:back), etc
+        @controller = mock()
+        @controller.stub!(:request).and_return(mock())
+        @controller.request.stub(:env).and_return({})
+        
         semantic_form_for(@new_post) do |builder|
-          concat(builder.buttons(:commit))
+          concat(builder.buttons(:commit, :cancel, :reset))
         end
       end
 
       it 'should render a form with a fieldset containing a list item for each button arg' do
-        output_buffer.should have_tag('form > fieldset.buttons > ol > li', :count => 1)
-        output_buffer.should have_tag('form > fieldset.buttons > ol > li.commit')
+        output_buffer.should have_tag('form > fieldset.buttons > ol > li', :count => 3)
+        output_buffer.should have_tag('form > fieldset.buttons > ol > li.commit', :count => 1)
+        output_buffer.should have_tag('form > fieldset.buttons > ol > li.cancel', :count => 1)
+        output_buffer.should have_tag('form > fieldset.buttons > ol > li.reset', :count => 1)
       end
 
     end
@@ -146,4 +153,3 @@ describe 'SemanticFormBuilder#buttons' do
   end
 
 end
-
