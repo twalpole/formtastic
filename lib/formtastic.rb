@@ -1631,7 +1631,7 @@ module Formtastic #:nodoc:
           { :size => self.class.default_text_field_size }
         else
           { :maxlength => column.limit,
-            :size => self.class.default_text_field_size && [column.limit, self.class.default_text_field_size].min }
+            :size => self.class.default_text_field_size }
         end
       end
 
