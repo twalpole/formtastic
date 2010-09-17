@@ -1626,7 +1626,7 @@ module Formtastic #:nodoc:
         column = self.column_for(method)
 
         if type == :text
-          { :cols => self.class.default_text_field_size, :rows => self.class.default_text_area_height }
+          { :rows => self.class.default_text_area_height }
         elsif type == :numeric || column.nil? || column.limit.nil?
           { :size => self.class.default_text_field_size }
         else
