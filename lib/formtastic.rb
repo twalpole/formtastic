@@ -394,7 +394,16 @@ module Formtastic #:nodoc:
       opts = args.extract_options!
       opts[:builder] ||= self.class
       args.push(opts)
-      fields_for(record_or_name_or_array, *args, &block)
+
+      wrapped_block_with_hidden_id_field = lambda do |builder|
+        template.instance_exec(builder, &block) 
+        
+        unless builder.instance_eval('@hidden_id_rendered')
+          template.concat(builder.input(:id, :as => :hidden)) if @object && @object.respond_to?(:persisted?)
+        end
+      end
+      
+      fields_for(record_or_name_or_array, *args, &wrapped_block_with_hidden_id_field)
     end
 
     # Generates the label for the input. It also accepts the same arguments as
@@ -679,6 +688,7 @@ module Formtastic #:nodoc:
       # to hidden input element.
       #
       def hidden_input(method, options)
+        @hidden_id_rendered = true
         options ||= {}
         html_options = options.delete(:input_html) || strip_formtastic_options(options)
         self.hidden_field(method, html_options)
