@@ -70,3 +70,13 @@
 # You can add custom inputs or override parts of Formtastic by subclassing SemanticFormBuilder and
 # specifying that class here.  Defaults to SemanticFormBuilder.
 # Formtastic::SemanticFormHelper.builder = MyCustomBuilder
+
+
+# Set default access keys for commit, cancel and reset buttons (defaults to nil)
+# Formtastic::SemanticFormBuilder.default_commit_button_accesskey = 's' 
+# Formtastic::SemanticFormBuilder.default_cancel_button_accesskey = 'x'
+# Formtastic::SemanticFormBuilder.default_reset_button_accesskey  = 'r' 
+
+# Should "pretty" buttons include an icon image tag (defaults to true, set to false for no image)
+# Formtastic::SemanticFormBuilder.pretty_buttons_with_images = false
+

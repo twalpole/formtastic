@@ -4,4 +4,7 @@ en:
     :no: 'No'
     :create: 'Create %{model}'
     :update: 'Update %{model}'
-    :required: 'required'
+    :submit: 'Submit %{model}'
+    :cancel: 'Cancel'
+    :reset: 'Reset'
+    :required: 'Required'

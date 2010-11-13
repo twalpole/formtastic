@@ -12,6 +12,12 @@ module Formtastic
       empty_directory 'public/stylesheets'
       template        'formtastic.css',         'public/stylesheets/formtastic.css'
       template        'formtastic_changes.css', 'public/stylesheets/formtastic_changes.css'
+      
+      empty_directory 'public/images/formtastic'
+      template        'tick.png',    'public/images/formtastic/tick.png'
+      template        'cross.png',   'public/images/formtastic/cross.png'
+      template        'refresh.png', 'public/images/formtastic/refresh.png'
+      
     end
   end
 end

@@ -8,6 +8,7 @@ describe 'SemanticFormBuilder#commit_button' do
   before do
     @output_buffer = ''
     mock_everything
+    ::ActiveSupport::Deprecation.silenced = true
   end
 
   describe 'when the object responds to :new_record? (Rails 2)' do
@@ -46,7 +47,17 @@ describe 'SemanticFormBuilder#commit_button' do
 
   end
 
-
+  after do
+    ::ActiveSupport::Deprecation.silenced = false
+  end
+  
+  it "should warn of the deprecation" do
+    ::ActiveSupport::Deprecation.should_receive(:warn).once
+    semantic_form_for(@new_post) do |builder|
+      concat(builder.commit_button)
+    end
+  end
+  
   describe 'when used on any record' do
 
     before do
@@ -305,6 +316,7 @@ describe 'SemanticFormBuilder#commit_button' do
             form = semantic_form_for(@new_post) do |builder|
               concat(builder.commit_button)
             end
+
             output_buffer.concat(form) if Formtastic::Util.rails3?
             output_buffer.should have_tag(%Q{li.commit input[@value="Custom Create Post"][@class~="create"]})
           end
@@ -468,11 +480,11 @@ describe 'SemanticFormBuilder#commit_button' do
       it 'should merge in classes applied using the :class option' do
         with_deprecation_silenced do
           form = semantic_form_for(@new_post) do |builder|
-            concat(builder.commit_button('text', :class => 'from_button_html', :wrapper_html => {:class => 'from_wrapper_html'}))
+            concat(builder.commit_button('text', :class => 'from_deprecated_class_option', :wrapper_html => {:class => 'from_wrapper_html'}))
           end
           output_buffer.concat(form) if Formtastic::Util.rails3?
           output_buffer.should have_tag("form li.commit")
-          output_buffer.should have_tag("form li.from_button_html")
+          output_buffer.should have_tag("form li.from_deprecated_class_option")
           output_buffer.should have_tag("form li.from_wrapper_html")
         end
       end
@@ -480,14 +492,10 @@ describe 'SemanticFormBuilder#commit_button' do
       it 'should warn that :class is a deprecated option' do
         with_deprecation_silenced do
           ::ActiveSupport::Deprecation.should_receive(:warn).any_number_of_times
-          @form = semantic_form_for(@new_post) do |builder|
-            concat(builder.commit_button('text', :class => 'from_button_html', :wrapper_html => {:class => 'from_wrapper_html'}))
+          semantic_form_for(@new_post) do |builder|
+            concat(builder.commit_button('text', :class => 'from_deprecated_class_option', :wrapper_html => {:class => 'from_wrapper_html'}))
           end
         end
-        output_buffer.concat(@form) if Formtastic::Util.rails3?
-        output_buffer.should have_tag("form li.commit")
-        output_buffer.should have_tag("form li.from_button_html")
-        output_buffer.should have_tag("form li.from_wrapper_html")
       end
     end
 

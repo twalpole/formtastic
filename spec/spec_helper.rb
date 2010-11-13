@@ -41,6 +41,21 @@ module FormtasticSpecHelper
   def rails2?
     ActionPack::VERSION::MAJOR == 2
   end
+  
+  def config
+    OpenStruct.new.tap do |c|
+      c.perform_caching = true
+      c.assets_dir      = "anywhere"
+    end
+  end
+  
+  def controller
+    @controller ||= mock('controller')
+  end
+  
+  def default_url_options
+    {}
+  end
 
   def default_input_type(column_type, column_name = :generic_column_name)
     @new_post.stub!(column_name)
@@ -110,6 +125,13 @@ module FormtasticSpecHelper
   end
 
   def mock_everything
+    
+    controller.stub!(:request).and_return(mock())
+    controller.request.stub(:env).and_return({})
+    controller.stub!(:config).and_return(config)
+    
+    #_routes.stub!(:url_for).with(any_args).and_return { raise "foo" }
+    
 
     # Resource-oriented styles like form_for(@post) will expect a path method for the object,
     # so we're defining some here.

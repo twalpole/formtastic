@@ -47,8 +47,8 @@ describe 'SemanticFormBuilder#buttons' do
         @legend_text = "Advanced options"
 
         @form = semantic_form_for(@new_post) do |builder|
-          builder.buttons :name => @legend_text do
-          end
+          concat(builder.buttons :name => @legend_text do
+          end)
         end
       end
       it 'should render a fieldset inside the form' do
@@ -63,8 +63,8 @@ describe 'SemanticFormBuilder#buttons' do
         @class_option = 'wide'
 
         @form = semantic_form_for(@new_post) do |builder|
-          builder.buttons :id => @id_option, :class => @class_option do
-          end
+          concat(builder.buttons :id => @id_option, :class => @class_option do
+          end)
         end
       end
       it 'should pass the options into the fieldset tag as attributes' do
@@ -122,14 +122,16 @@ describe 'SemanticFormBuilder#buttons' do
 
       before do
         @form = semantic_form_for(@new_post) do |builder|
-          concat(builder.buttons(:commit))
+          concat(builder.buttons(:commit, :cancel, :reset))
         end
       end
 
       it 'should render a form with a fieldset containing a list item for each button arg' do
         output_buffer.concat(@form) if Formtastic::Util.rails3?
-        output_buffer.should have_tag('form > fieldset.buttons > ol > li', :count => 1)
-        output_buffer.should have_tag('form > fieldset.buttons > ol > li.commit')
+        output_buffer.should have_tag('form > fieldset.buttons > ol > li', :count => 3)
+        output_buffer.should have_tag('form > fieldset.buttons > ol > li.commit', :count => 1)
+        output_buffer.should have_tag('form > fieldset.buttons > ol > li.cancel', :count => 1)
+        output_buffer.should have_tag('form > fieldset.buttons > ol > li.reset', :count => 1)
       end
 
     end
@@ -163,4 +165,3 @@ describe 'SemanticFormBuilder#buttons' do
   end
 
 end
-

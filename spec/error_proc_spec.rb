@@ -11,7 +11,9 @@ describe 'Rails field_error_proc' do
   end
 
   it "should not be overridden globally for all form builders" do
-    current_field_error_proc = ::ActionView::Base.field_error_proc
+    # need to set this to a known proc before we start in case another spec has left
+    # this in a dirty state
+    current_field_error_proc = ::ActionView::Base.field_error_proc = proc {}
 
     semantic_form_for(@new_post) do |builder|
       ::ActionView::Base.field_error_proc.should_not == current_field_error_proc

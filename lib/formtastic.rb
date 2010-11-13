@@ -9,7 +9,7 @@ module Formtastic #:nodoc:
     class_inheritable_accessor :default_text_field_size, :default_text_area_height, :default_text_area_width, :all_fields_required_by_default, :include_blank_for_select_by_default,
                    :required_string, :optional_string, :inline_errors, :label_str_method, :collection_value_methods, :collection_label_methods, :file_metadata_suffixes,
                    :inline_order, :custom_inline_order, :file_methods, :priority_countries, :i18n_lookups_by_default, :escape_html_entities_in_hints_and_labels,
-                   :default_commit_button_accesskey, :default_inline_error_class, :default_hint_class, :default_error_list_class, :instance_reader => false
+                   :default_commit_button_accesskey, :default_inline_error_class, :default_hint_class, :default_error_list_class, :pretty_buttons_with_images, :default_cancel_button_accesskey, :default_reset_button_accesskey, :instance_reader => false
 
     cattr_accessor :custom_namespace
 
@@ -32,6 +32,9 @@ module Formtastic #:nodoc:
     self.i18n_lookups_by_default = false
     self.escape_html_entities_in_hints_and_labels = true
     self.default_commit_button_accesskey = nil
+    self.default_cancel_button_accesskey = nil
+    self.default_reset_button_accesskey = nil
+    self.pretty_buttons_with_images = true
     self.default_inline_error_class = 'inline-errors'
     self.default_error_list_class = 'errors'
     self.default_hint_class = 'inline-hints'
@@ -313,7 +316,7 @@ module Formtastic #:nodoc:
         field_set_and_list_wrapping(html_options, &block)
       else
         args = [:commit] if args.empty?
-        contents = args.map { |button_name| send(:"#{button_name}_button") }
+        contents = args.map { |button_name| send(:button, button_name) }
         field_set_and_list_wrapping(html_options, contents)
       end
     end
@@ -338,51 +341,185 @@ module Formtastic #:nodoc:
     #  <%= form.commit_button "Go" %> => <input name="commit" type="submit" value="Go" class="{create|update|submit}" />
     #  <%= form.commit_button :class => "pretty" %> => <input name="commit" type="submit" value="Save Post" class="pretty {create|update|submit}" />
     #
+    # THIS METHOD IS DEPRECATED IN FAVOUR OF button() AND WILL BE REMOVED FROM THE API BEFORE 1.0
     def commit_button(*args)
+      ::ActiveSupport::Deprecation.warn("commit_button() is deprecated in favor of button() and the API has changed, please update ASAP as commit_button will be removed before Formtastic 1.0", caller)
+      
       options = args.extract_options!
       ::ActiveSupport::Deprecation.warn(":class => 'whatever' is deprecated on commit button, use :wrapper_html => { :class => 'whatever' } instead.", caller) if options.key?(:class)
       text = options.delete(:label) || args.shift
+
+      options[:button_html] ||= {}
+      options[:button_html][:class] ||= ""
+      options[:button_html][:class] << " submit"
+      options[:button_html][:accesskey] ||= options.delete(:accesskey)
       
+      # support for deprecated :class option
+      options[:wrapper_html] ||= {}
+      options[:wrapper_html][:class] ||= ""
+      options[:wrapper_html][:class] = ([options[:wrapper_html][:class]] << " #{options.delete(:class)}").flatten.compact 
 
-      if @object && (@object.respond_to?(:persisted?) || @object.respond_to?(:new_record?))
-        if @object.respond_to?(:persisted?) # ActiveModel
-          key = @object.persisted? ? :update : :create
-        else # Rails 2
-          key = @object.new_record? ? :create : :update
-        end
-
-        # Deal with some complications with ActiveRecord::Base.human_name and two name models (eg UserPost)
-        # ActiveRecord::Base.human_name falls back to ActiveRecord::Base.name.humanize ("Userpost")
-        # if there's no i18n, which is pretty crappy.  In this circumstance we want to detect this
-        # fall back (human_name == name.humanize) and do our own thing name.underscore.humanize ("User Post")
-        if @object.class.model_name.respond_to?(:human)
-          object_name = @object.class.model_name.human
-        else
-          object_human_name = @object.class.human_name                # default is UserPost => "Userpost", but i18n may do better ("User post")
-          crappy_human_name = @object.class.name.humanize             # UserPost => "Userpost"
-          decent_human_name = @object.class.name.underscore.humanize  # UserPost => "User post"
-          object_name = (object_human_name == crappy_human_name) ? decent_human_name : object_human_name
-        end
-      else
-        key = :submit
-        object_name = @object_name.to_s.send(self.class.label_str_method)
-      end
-
-      text = (self.localized_string(key, text, :action, :model => object_name) ||
-              ::Formtastic::I18n.t(key, :model => object_name)) unless text.is_a?(::String)
-
-      button_html = options.delete(:button_html) || {}
-      button_html.merge!(:class => [button_html[:class], key].compact.join(' '))
-
-      wrapper_html_class = ['commit', options.delete(:class)].compact # TODO: Add class reflecting on form action.
-      wrapper_html = options.delete(:wrapper_html) || {}
-      wrapper_html[:class] = (wrapper_html_class << wrapper_html[:class] << button_html[:class]).flatten.compact.join(' ')
-
-      accesskey = (options.delete(:accesskey) || self.class.default_commit_button_accesskey) unless button_html.has_key?(:accesskey)
-      button_html = button_html.merge(:accesskey => accesskey) if accesskey
-      template.content_tag(:li, Formtastic::Util.html_safe(self.submit(text, button_html)), wrapper_html)
+      button(:commit,
+             :as => :submit, 
+             :label => text, 
+             :button_html => options[:button_html],
+             :wrapper_html => options[:wrapper_html],
+             :accesskey => options[:accesskey]
+      )
     end
+    
+    # Renders buttons for submitting, cancelling and reseting forms using combinations of <input>, 
+    # <button> and <a> tags to suit various needs.
+    #
+    # There are three types of buttons rendered, which you specify with the first (required) argument,
+    # which specifies if clicking the button should commit, cancel or submit the form:
+    #
+    #   f.buttons do
+    #     f.button :cancel
+    #     f.button :reset
+    #     f.button :commit
+    #   end
+    #
+    # *Appearance*
+    #
+    # You can control the appearance of each of these with the :as option, which has three
+    # choices:
+    #
+    #   * :as => :pretty (default), a <button> or <link> with an icon inside, styled to look like a "pretty button"
+    #   * :as => :submit, a <button> or <input type="submit"> with native browser styling
+    #   * :as => :link, an <a> styled to look like plain text
+    #
+    # The aim of the :as option is to abstract away the implementation details behind each type of
+    # button, to allow the form author to focus on the end result.  For example, a :pretty button
+    # will need to consist of an <a> tag when it's a :cancel button, or a <button> tag for :commit
+    # and :reset.
+    #
+    # Not all :as options are available for all button types (without Javascript, it doesn't make)
+    # sense for a :reset button to be built from an <a> tag -- it needs to be a <button> tag.
+    # Example valid combinations:
+    #
+    #   f.button :commit, :as => (:pretty|:submit)
+    #   f.button :reset,  :as => (:pretty|:submit)
+    #   f.button :cancel, :as => (:pretty|:link)
+    #
+    # In practice, this means that many common UI patterns are possible, such as 2–3 "pretty" buttons
+    # with icons and CSS styling, or a browser native submit button with a small cancel link after it,
+    # etc.  Examples:
+    #
+    #   f.buttons do
+    #     f.button :cancel, :as => :pretty
+    #     f.button :reset,  :as => :pretty
+    #     f.button :commit, :as => :pretty
+    #   end
+    #
+    #   f.buttons do
+    #     f.button :cancel, :as => :pretty
+    #     f.button :commit, :as => :link
+    #   end
+    #
+    #   f.buttons do
+    #     f.button :cancel, :as => :submit
+    #     f.button :commit, :as => :link
+    #   end
+    #
+    # While the CSS supplied with Formtastic to support this is quite complex, in practice, your
+    # application will not need to support all possible combinations, so your own stylesheets will 
+    # be a *lot* simpler.  If you're looking to create your own "pretty button" styles, a great 
+    # place to start is Kevin Hale's "Rediscovering the Button Element":http://particletree.com/features/rediscovering-the-button-element,
+    # although the CSS will be *slightly* different due to Formtastic's different markup structure.
+    #
+    # *Icons*
+    #
+    # An icon is included in :pretty buttons.  You can disable this with the pretty_buttons_with_images 
+    # configuration option set to false, or specify a custom image URL:
+    #
+    #   f.buttons do
+    #     f.button :commit, :as => :pretty, :image => "icons/add.png"
+    #     f.button :cancel, :as => :pretty, :image => "icons/delete.png"
+    #   end
+    #
+    # By default, Formtastic will generate image tags for the following URLs:
+    #
+    #   * /images/formtastic/tick.png
+    #   * /images/formtastic/cross.png
+    #   * /images/formtastic/refresh.png
+    #
+    # Add your own icons, or run @script/generate formtastic@ to add the default icons to your
+    # public directory.  The supplied icons were copied (or derived) from the Famfamfam Silk icon 
+    # set by Mark James http://www.famfamfam.com/lab/icons/silk/, under a Creative Commons 
+    # Attribution 2.5 License.
+    #
+    # *Cancel URL*
+    #
+    # By default, cancel buttons use Rails built in :back option for the URL (a shortcut to link to
+    # the referrer if there is one, or fallback to a Javascript link), but you can specify any custom
+    # url you like, just like a standard link_to or url_for:
+    #
+    #   f.button :cancel, :url => posts_path
+    #   f.button :cancel, :url => { :controller => "posts", :action => "list" }
+    #   f.button :cancel, :url => "http://somewhere.com"
+    #
+    # *Button Text / Labels*
+    #
+    # The :label option is used to customize the text label used in the button.  If no :label option
+    # is provided, Formtastic will first perform an i18n lookup on :create, :update, :cancel or :reset 
+    # keys.  If no translations are provided, the fallbacks "Create", "Update", "Cancel" and "Reset"
+    # are used.
+    #
+    # Custom labels using your own i18n key or a custom string are also possible:
+    #
+    #   f.button :commit, :label => :go
+    #   f.button :commit, :label => "Go!"
+    #
+    # *Access Keys*
+    # 
+    # By default, no access keys are added to the buttons, but you can set these on a global basis
+    # with the following configuration options:
+    #
+    #   * Formtastic::SemanticFormBuilder.default_commit_button_accesskey = "s" 
+    #   * Formtastic::SemanticFormBuilder.default_cancel_button_accesskey = "c" 
+    #   * Formtastic::SemanticFormBuilder.default_reset_button_accesskey  = "r"
+    #
+    # *Custom HTML attributes*
+    # 
+    # Formtaswtic provides plenty of class and id hooks in the markup surrounding each button, but
+    # if custom ids, classes or other HTML attributes are required on either the wrapper <li> tag or
+    # the underlying <button>, <input> or <a> tag, the :wrapper_html and :button_html options will
+    # pass all attributes down:
+    #
+    #   f.button :commit, :wrapper_html => { :class => "primary" }
+    #   f.button :commit, :button_html => { :onclick => "somethingNasty();" }
+    def button(kind, options = {})
+      options[:as] ||= :pretty
+      
+      raise(ArgumentError, "unknown :as value #{options[:as]}") unless [:pretty, :submit, :link].include?(options[:as])
+      raise(ArgumentError, ":image option is only allowed with :as => :pretty")     if options[:as] != :pretty && options.has_key?(:image)
+      raise(ArgumentError, ":url option is only allowed for f.button :cancel")      if kind != :cancel && options[:url]
+      raise(ArgumentError, ":as => :link is not allowed for f.button :commit")      if kind == :commit && options[:as] == :link
+      raise(ArgumentError, ":as => :link is not allowed for f.button :reset")       if kind == :reset  && options[:as] == :link
+      raise(ArgumentError, ":as => :submit is not allowed for f.button :cancel")    if kind == :cancel && options[:as] == :submit
+      raise(ArgumentError, ":as => :submit is not allowed for f.button :reset")     if kind == :reset  && options[:as] == :submit
+      raise(ArgumentError, "first argument can only be :commit, :cancel or :reset") unless [:commit, :cancel, :reset].include?(kind)
+      
+      key = button_key(kind)
 
+      options[:wrapper_html] ||= {}
+      options[:wrapper_html][:class] = ([kind, options[:as]] << options[:wrapper_html][:class]).flatten.compact.join(' ') # options[:wrapper_html][:class] << [(cancel|commit|submit), (button|submit|link)]
+      options[:button_html] ||= {}
+      options[:button_html][:class] = ([key] << options[:button_html][:class]).flatten.compact.join(' ')
+      options[:button_html][:accesskey] ||= case kind
+        when :commit then self.class.default_commit_button_accesskey
+        when :cancel then self.class.default_cancel_button_accesskey
+        when :reset  then self.class.default_reset_button_accesskey
+      end
+      options[:url] ||= :back if kind == :cancel
+      options[:label] ||= begin 
+        text = (self.localized_string(key, text, :action, :model => button_object_name) || ::Formtastic::I18n.t(key, :model => button_object_name)) unless text.is_a?(::String)
+      end
+      
+      return template.content_tag(:li, send(:"#{options[:as]}_button", kind, options), options[:wrapper_html]) # pretty_button, cancel_button, reset_button
+    end
+        
     # A thin wrapper around #fields_for to set :builder => Formtastic::SemanticFormBuilder
     # for nesting forms:
     #
@@ -499,6 +636,33 @@ module Formtastic #:nodoc:
     end
 
     protected
+    
+      def pretty_button(kind, options)
+        if (options[:image] != false && self.class.pretty_buttons_with_images)# false indicates no image at all
+          options[:image] ||= case kind
+            when :commit then "formtastic/tick.png"
+            when :cancel then "formtastic/cross.png"
+            when :reset  then "formtastic/refresh.png"
+          end
+        end
+
+        image_html = options[:image] ? template.image_tag(options[:image], :alt => "") : nil
+        text = [image_html, options[:label]].compact.join(" ").html_safe
+
+        case kind
+          when :commit then template.content_tag(:button, text, options[:button_html].merge(:type => :submit))
+          when :cancel then template.link_to(text, options[:url], options[:button_html])
+          when :reset  then template.content_tag(:button, text, options[:button_html].merge(:type => :reset))
+        end
+      end
+
+      def submit_button(kind, options)
+        self.submit(options[:label], options[:button_html])
+      end
+
+      def link_button(kind, options)
+        template.link_to(options[:label], options[:url], options[:button_html])
+      end
 
       def error_keys(method, options)
         @methods_for_error ||= {}
@@ -1868,6 +2032,44 @@ module Formtastic #:nodoc:
         end
         string
       end
+      
+      # Deals with the complexity of finding the right i18n key. Commit buttons get special treatment
+      # depending on if we have an object and if it's a new record, etc.
+      def button_key(kind)
+        if kind == :commit
+          if @object && (@object.respond_to?(:persisted?) || @object.respond_to?(:new_record?))
+            if @object.respond_to?(:persisted?) # ActiveModel
+              key = @object.persisted? ? :update : :create
+            else # Rails 2
+              key = @object.new_record? ? :create : :update
+            end
+          else
+            key = :submit
+          end
+        else
+          key = kind
+        end
+      end
+
+      # Deal with some complications with ActiveRecord::Base.human_name and two name models (eg UserPost)
+      # ActiveRecord::Base.human_name falls back to ActiveRecord::Base.name.humanize ("Userpost")
+      # if there's no i18n, which is pretty crappy.  In this circumstance we want to detect this
+      # fall back (human_name == name.humanize) and do our own thing name.underscore.humanize ("User Post")
+      def button_object_name
+        if @object && (@object.respond_to?(:persisted?) || @object.respond_to?(:new_record?))
+          if @object.class.model_name.respond_to?(:human)
+            object_name = @object.class.model_name.human
+          else
+            object_human_name = @object.class.human_name                # default is UserPost => "Userpost", but i18n may do better ("User post")
+            crappy_human_name = @object.class.name.humanize             # UserPost => "Userpost"
+            decent_human_name = @object.class.name.underscore.humanize  # UserPost => "User post"
+            object_name = (object_human_name == crappy_human_name) ? decent_human_name : object_human_name
+          end
+        else
+          object_name = @object_name.to_s.send(self.class.label_str_method)
+        end
+      end
+      
 
   end
 
