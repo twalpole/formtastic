@@ -1726,14 +1726,12 @@ module Formtastic #:nodoc:
       # Gets the nested_child_index value from the parent builder. In Rails 2.3
       # it always returns a fixnum. In next versions it returns a hash with each
       # association that the parent builds.
-      #
       def parent_child_index(parent) #:nodoc:
         duck = parent[:builder].instance_variable_get('@nested_child_index')
 
         if duck.is_a?(Hash)
-          child = parent[:for]
-          child = child.first if child.respond_to?(:first)
-          duck[child].to_i + 1
+          name = "#{parent[:builder].object_name}[#{parent[:for]}_attributes]"
+          duck[name].to_i + 1
         else
           duck.to_i + 1
         end
