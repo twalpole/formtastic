@@ -1186,7 +1186,7 @@ module Formtastic #:nodoc:
         end
 
         fieldset_content = legend_tag(method, options)
-        fieldset_content << create_hidden_field_for_check_boxes(input_name, value_as_class) unless hidden_fields
+        fieldset_content << create_hidden_field_for_check_boxes(input_name, value_as_class, disabled_option_is_present) unless hidden_fields
         fieldset_content << template.content_tag(:ol, Formtastic::Util.html_safe(list_item_content.join))
         template.content_tag(:fieldset, fieldset_content)
       end
@@ -1207,8 +1207,9 @@ module Formtastic #:nodoc:
       end
 
       # Outputs a custom hidden field for check_boxes
-      def create_hidden_field_for_check_boxes(method, value_as_class) #:nodoc:
+      def create_hidden_field_for_check_boxes(method, value_as_class, disabled) #:nodoc:
         options = value_as_class ? { :class => [method.to_s.singularize, 'default'].join('_') } : {}
+        options[:disabled] = disabled
         input_name = "#{object_name}[#{method.to_s}][]"
         template.hidden_field_tag(input_name, '', options)
       end
